@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">MorzeTransfer</string>
+    <string name="main_title">Морзе</string>
+    <string name="settings">Настройки</string>
+    <string name="output_morze">Поле для вывода Морзе</string>
+    <string name="send">Отправить</string>
+    <string name="bluetooth_device_name">Имя Bluetooth-устройства</string>
+    <string name="save">Сохранить</string>
+    <string name="input_field">Поле для ввода текста</string>
+    <string name="send_button_label">Отправить</string>
+    <string name="settings_button_label">Настройки</string>
+    <string name="back_button_desc">Button for removing back</string>
+</resources>
