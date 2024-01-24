@@ -4,7 +4,7 @@
     android:layout_height="match_parent"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:background="#303030">
+    android:background="@color/black">
 
     <ImageView
         android:id="@+id/back_button_image"
@@ -25,7 +25,7 @@
         android:layout_height="wrap_content"
         android:layout_centerHorizontal="true"
         android:text="@string/settings"
-        android:textColor="@color/bright_green"
+        android:textColor="@color/darkred"
         android:textSize="40sp"
         android:textStyle="bold"
         app:layout_constraintLeft_toLeftOf="parent"
@@ -38,7 +38,7 @@
         android:layout_height="22dp"
         android:layout_marginTop="80dp"
         android:text="@string/bluetooth_device_name"
-        android:textColor="@color/bright_green"
+        android:textColor="@color/darkred"
         android:textSize="17sp"
         android:textStyle="bold"
         app:layout_constraintLeft_toLeftOf="@id/back_button_image"
@@ -51,7 +51,7 @@
         android:layout_marginTop="20dp"
         android:textSize="30sp"
         android:textColor="@color/white"
-        android:background="@color/dim_green"
+        android:background="@color/darkred"
         app:layout_constraintTop_toBottomOf="@id/device_title"
         app:layout_constraintStart_toStartOf="@id/device_title"/>
 
@@ -61,7 +61,7 @@
         android:layout_height="50dp"
         android:layout_centerHorizontal="true"
         android:background="@drawable/rounded_button"
-        android:backgroundTint="@color/bright_green"
+        android:backgroundTint="@color/darkred"
         android:text="@string/save"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"

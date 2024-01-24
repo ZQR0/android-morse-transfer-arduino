@@ -10,4 +10,11 @@
     <color name="bright_green">#2ECC71</color>
     <color name="grey">#707B7C</color>
     <color name="dim_green">#364333</color>
+    <color name="deepskyblue">#00BFFF</color>
+    <color name="royalblue">#4169E1</color>
+    <color name="midnightblue">#191970</color>
+    <color name="seagreen">#2E8B57</color>
+    <color name="limegreen">#32CD32</color>
+    <color name="darkgreen">#006400</color>
+    <color name="darkred">#8B0000</color>
 </resources>
