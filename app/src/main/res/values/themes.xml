@@ -2,4 +2,29 @@
 <resources>
 
     <style name="Theme.MorzeTransfer" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <style name="CustomOverlayDialog" parent="Theme.AppCompat.Light.Dialog">
+        <item name="android:windowBackground">@android:color/black</item>
+        <item name="android:windowAnimationStyle">@android:style/Animation.Dialog</item>
+        <item name="android:windowIsFloating">true</item>
+        <item name="android:windowCloseOnTouchOutside">false</item>
+
+        <!-- Задний план с красными краями -->
+        <item name="android:background">@drawable/custom_dialog_background</item>
+
+        <!-- Разделительные линии -->
+        <item name="android:divider">@drawable/custom_dialog_divider</item>
+        <item name="android:dividerHeight">1dp</item>
+
+        <!-- Белый цвет текста -->
+        <item name="android:textColor">@android:color/white</item>
+    </style>
+
+    <style name="RedDividerListViewStyle" parent="@android:style/Widget.ListView">
+        <item name="android:divider">@color/black</item> <!-- Чёрная линия-разделитель -->
+        <item name="android:dividerHeight">3dp</item> <!-- Толщина линии-разделителя -->
+        <item name="android:background">#000000</item> <!-- Черный фон -->
+        <item name="android:textColor">#ffffff</item> <!-- Белый текст -->
+        <item name="android:textStyle">bold</item> <!-- Жирный текст -->
+    </style>
 </resources>
