@@ -8,20 +8,6 @@
         android:background="@color/black">
 
 
-<!--        <ImageView-->
-<!--            android:id="@+id/settings_image"-->
-<!--            android:layout_width="50dp"-->
-<!--            android:layout_height="50dp"-->
-<!--            android:layout_marginStart="15dp"-->
-<!--            android:layout_marginTop="15dp"-->
-<!--            android:clickable="true"-->
-<!--            android:contentDescription="@string/settings_button_label"-->
-<!--            android:focusable="true"-->
-<!--            android:src="@drawable/settings_button"-->
-<!--            app:layout_constraintStart_toStartOf="parent"-->
-<!--            app:layout_constraintTop_toTopOf="parent" />-->
-
-
         <TextView
             android:id="@+id/title"
             android:layout_width="wrap_content"
@@ -100,7 +86,6 @@
             android:id="@+id/sendButton"
             android:layout_width="130dp"
             android:layout_height="60dp"
-            android:layout_centerHorizontal="true"
             android:background="@drawable/rounded_button"
             android:backgroundTint="@color/darkred"
             android:clickable="true"
@@ -109,9 +94,25 @@
             android:text="@string/send"
             android:textStyle="bold"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintLeft_toRightOf="@id/translateButton"
             app:layout_constraintRight_toRightOf="parent"
             app:layout_constraintTop_toBottomOf="@id/input_field" />
+
+        <Button
+            android:id="@+id/translateButton"
+            android:layout_width="130dp"
+            android:layout_height="60dp"
+            android:background="@drawable/rounded_button"
+            android:backgroundTint="@color/darkred"
+            android:clickable="true"
+            android:textColor="@color/black"
+            android:focusable="true"
+            android:text="Перевести"
+            android:textStyle="bold"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/input_field"
+            app:layout_constraintRight_toLeftOf="@id/sendButton"
+            app:layout_constraintLeft_toLeftOf="parent"/>
 
 
     </androidx.constraintlayout.widget.ConstraintLayout>

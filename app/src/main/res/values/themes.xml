@@ -27,4 +27,10 @@
         <item name="android:textColor">#ffffff</item> <!-- Белый текст -->
         <item name="android:textStyle">bold</item> <!-- Жирный текст -->
     </style>
+
+    <style name="statusBar">
+        <item name="android:statusBarColor">
+            @color/darkred
+        </item>
+    </style>
 </resources>

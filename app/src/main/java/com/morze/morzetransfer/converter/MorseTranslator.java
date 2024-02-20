@@ -8,7 +8,6 @@ import java.util.Map;
 public class MorseTranslator {
 
     private final Map<String, String> ruToMorse = new HashMap<>();
-    private final Map<String, String> morseToRu = new HashMap<>();
 
     public MorseTranslator() {
         this.fillTables();

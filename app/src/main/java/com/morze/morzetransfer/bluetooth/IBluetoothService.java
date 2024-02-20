@@ -1,11 +1,12 @@
 package com.morze.morzetransfer.bluetooth;
 
-import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
-import android.content.Context;
 
-import java.util.Set;
+import java.util.UUID;
 
 public interface IBluetoothService {
-    BluetoothAdapter getBluetoothAdapterFromContext(Context context);
+    void connect(BluetoothDevice device);
+    void disconnect();
+    void sendData(String data);
+    boolean isConnected();
 }

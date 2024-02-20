@@ -1,17 +1,12 @@
 package com.morze.morzetransfer;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.app.AlertDialog;
-import android.app.FragmentManager;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
-import android.content.BroadcastReceiver;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.hardware.lights.LightState;
 import android.os.Bundle;
-import android.os.Handler;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
@@ -20,9 +15,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
-import android.widget.ListAdapter;
 import android.widget.ListView;
-import android.widget.SimpleAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -31,12 +24,13 @@ import androidx.core.app.ActivityCompat;
 
 import com.morze.morzetransfer.bluetooth.BluetoothPermissionsUtils;
 import com.morze.morzetransfer.bluetooth.BluetoothService;
-import com.morze.morzetransfer.bluetooth.BluetoothServiceManager;
+import com.morze.morzetransfer.bluetooth.IBluetoothService;
 import com.morze.morzetransfer.converter.MorseTranslator;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 
 public class MainActivityJava extends Activity {
@@ -45,17 +39,14 @@ public class MainActivityJava extends Activity {
     private static final String TAG = "MainActivityJava";
     private static final int REQUEST_ENABLE_BT = 1;
 
-    private final FragmentManager fragmentManager = this.getFragmentManager();
-
     // Bluetooth objects
     private BluetoothAdapter adapter;
-    private BroadcastReceiver discoveryReciever;
-    private BluetoothServiceManager manager;
-    private Handler handler;
+    private BluetoothService bluetoothService;
 
+    // Other stuff
+    private static final MorseTranslator TRANSLATOR = new MorseTranslator();
 
     // Elements from activity xml
-    private ImageView settingsImage;
     private Button sendButton;
     private TextView deviceNameField;
     private TextView morseTextField;
@@ -63,6 +54,7 @@ public class MainActivityJava extends Activity {
     private FrameLayout frameLayout;
     private ListView deviceList;
     private ImageView closeButton;
+    private Button translateButton;
 
 
     @Override
@@ -70,18 +62,13 @@ public class MainActivityJava extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main_activity);
 
-        Log.d(TAG, "onCreate: activity created, logs work");
-        System.out.println("onCreate: activity created, logs work");
-
         this.initAllElements();
-        BluetoothPermissionsUtils.requestPermissionsForBluetooth(this, this);
         this.enableBluetoothFromActivity();
-        this.translateAndShow();
+        this.processMorse();
         this.openDevicesList();
         this.closeOverlayButtonOnClick();
 
-        this.manager = new BluetoothServiceManager(this, handler, this);
-        Log.d(TAG, "Bluetooth manager initialized");
+        Log.d(TAG, "All services and components enabled");
     }
 
 
@@ -98,56 +85,48 @@ public class MainActivityJava extends Activity {
         super.onActivityResult(requestCode, resultCode, data);
     }
 
+    @Override
+    protected void onStart() {
+        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
+            BluetoothPermissionsUtils.requestPermissionsForBluetooth(this, this);
+        }
+        super.onStart();
+    }
 
     @Override
     protected void onResume() {
+        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
+            BluetoothPermissionsUtils.requestPermissionsForBluetooth(this, this);
+        }
         super.onResume();
     }
 
 
     @Override
     protected void onPause() {
-        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
-            BluetoothPermissionsUtils.requestPermissionsForBluetooth(this, this);
-        }
-        if (this.adapter != null) {
-            adapter.cancelDiscovery();
-        }
-        if (this.discoveryReciever != null) {
-            unregisterReceiver(this.discoveryReciever);
-            this.discoveryReciever = null;
-        }
-
         super.onPause();
     }
 
 
     @Override
     protected void onDestroy() {
-        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
-            BluetoothPermissionsUtils.requestPermissionsForBluetooth(this, this);
-        }
-        if (this.adapter != null) {
-            adapter.cancelDiscovery();
-        }
-        if (this.discoveryReciever != null) {
-            unregisterReceiver(this.discoveryReciever);
-            this.discoveryReciever = null;
-        }
-
         super.onDestroy();
+        this.bluetoothService.disconnect();
     }
 
 
     private void initAllElements() {
-//        settingsImage = (ImageView) findViewById(R.id.settings_image);
-        inputField = (EditText) findViewById(R.id.input_field);
-        sendButton = (Button) findViewById(R.id.sendButton);
-        morseTextField = (TextView) findViewById(R.id.morze_output_field);
+        inputField = findViewById(R.id.input_field);
+        sendButton = findViewById(R.id.sendButton);
+        morseTextField = findViewById(R.id.morze_output_field);
         deviceNameField = findViewById(R.id.device_name);
         deviceList = findViewById(R.id.list_of_devices);
         frameLayout = findViewById(R.id.overlay_fragment_devices_list);
         closeButton = findViewById(R.id.overlay_close_button);
+        translateButton = findViewById(R.id.translateButton);
+
+        this.adapter = BluetoothAdapter.getDefaultAdapter();
+        this.bluetoothService = new BluetoothService(this.adapter, this);
     }
 
 
@@ -161,38 +140,40 @@ public class MainActivityJava extends Activity {
         });
     }
 
-//    private void switchToSettings() {
-//        settingsImage.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View view) {
-//                changeActivity(SettingsActivityJava.class);
-//                finish();
-//                Log.d(TAG, "onClick: pressed");
-//            }
-//        });
-//    }
 
-
-    private void changeActivity(Class<?> destinationActivity) {
-        Intent intent = new Intent(MainActivityJava.this, destinationActivity);
-        startActivity(intent);
+    private void processMorse() {
+        this.translateMorse();
+        //this.sendMorse();
     }
 
 
-    // Здесь происходит и перевод, и вывод в TextView, и отправление сообщения
-    private void translateAndShow() {
-        MorseTranslator translator = new MorseTranslator();
-
-        sendButton.setOnClickListener(new View.OnClickListener() {
+    private void translateMorse() {
+        this.translateButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 String input = inputField.getText().toString();
-                String res = translator.translate(input);
-
+                String res = TRANSLATOR.translate(input);
                 morseTextField.setText(res);
-                manager.sendMessage(res);
-
                 Log.d(TAG, input);
+            }
+        });
+    }
+
+
+    private void sendMorse() {
+        this.sendButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                 final String message = morseTextField.getText().toString();
+                if (bluetoothService.isConnected()) {
+                    // TODO: 18.02.2024 При использовании этого метода не подключается устройство
+//                    bluetoothService.sendData(message);
+//                    Log.d(TAG, "sendData success");
+                    Toast.makeText(MainActivityJava.this, "Данные отправлены", Toast.LENGTH_SHORT).show();
+                } else {
+                    Log.e(TAG, "Device is not connected");
+                    Toast.makeText(MainActivityJava.this, "Нет подключенных устройств для отправления", Toast.LENGTH_SHORT).show();
+                }
             }
         });
     }
@@ -205,7 +186,6 @@ public class MainActivityJava extends Activity {
         if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
             BluetoothPermissionsUtils.requestPermissionsForBluetooth(this, this);
         }
-        adapter = new BluetoothService(this, this.handler, this).getBluetoothAdapterFromContext(this);
         if (adapter != null && !adapter.isEnabled()) {
             // Предлагаем пользователю включить Bluetooth
             Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
@@ -221,95 +201,81 @@ public class MainActivityJava extends Activity {
 
 
     /**
-     * Method for searching a device in recently connected devices
-     * If such not exists, we start start discovering by other method
-     *
-     * @param deviceName Name of bluetooth device for connection
-     * @return Device MAC-Address for connection
-     */
-    private BluetoothDevice getTargetDeviceFromBonded(String deviceName) {
-        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
-            BluetoothPermissionsUtils.requestPermissionsForBluetooth(this, this);
-        }
-
-        Set<BluetoothDevice> devices = this.getBondedDevices();
-        if (devices.size() > 0) {
-            for (BluetoothDevice device : devices) {
-                if (device.getName().equals(deviceName)) {
-                    return device;
-                }
-                return null;
-            }
-        }
-
-        return null;
-    }
-
-
-
-    /**
-     * @return set of paired bluetooth devices
+     * Method For showing the list of paired devices as the view
      * */
-    private Set<BluetoothDevice> getBondedDevices() {
-        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
-            BluetoothPermissionsUtils.requestPermissionsForBluetooth(this, this);
-        }
-        return this.adapter.getBondedDevices();
-    }
-
-
-    /**
-     * Method for showing the list of paired devices as the view
-     * */
+    // TODO: 29.01.2024 Разделить на более маленькие методы всю логику
+    @SuppressLint("MissingPermission")
     private void showBluetoothListDialog() {
-        Log.d(TAG, "");
-        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
-            BluetoothPermissionsUtils.requestPermissionsForBluetooth(this, this);
-        }
-
         this.frameLayout.setVisibility(View.VISIBLE); // Делаем FrameLayout видимым для пользователя
 
-        List<String> deviceNames = new ArrayList<>();
-        List<BluetoothDevice> devices = new ArrayList<>();
+        List<String> deviceNames = new ArrayList<>(); // список имён устройств (просто строчный тип)
+        List<BluetoothDevice> devices = new ArrayList<>(this.adapter.getBondedDevices()); // Список устройств из множества устройств
 
-        for (BluetoothDevice device : this.getBondedDevices()) {
-            deviceNames.add(device.getName());
-            devices.add(device);
+        for (BluetoothDevice device : devices) { // заполняем список с именами и MAC-адресами из списка раннее подключённых устройств
+            // Формат Имя/Mac-адрес
+            deviceNames.add(String.format("%s/%s", device.getName(), device.getAddress())); // заполняем список имён и MAC для отображения в нашем deviceList ListView
         }
 
-        //Сделать предупреждение о пустом и не пустом списке через виджеты Toast
+        deviceNames.add("TEST-DEVICE/8B:67:BA:3C:CA:09"); // ONLY FOR DEBUGGING
+
+        this.deviceToastAlert(devices); // просто небольшое уведомление для отладки
+
+        ArrayAdapter<String> arrayAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, deviceNames); // Адаптер для отображения списка
+
+        this.deviceList.setAdapter(arrayAdapter); // установка адаптера в ListView
+        this.deviceList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                if (ActivityCompat.checkSelfPermission(MainActivityJava.this, android.Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+                    BluetoothPermissionsUtils.requestPermissionsForBluetooth(MainActivityJava.this, MainActivityJava.this);
+                }
+                final String MAC = (String) deviceList.getItemAtPosition(i).toString().split("/")[1]; // получаем MAC-адрес из списка по индексу позиции
+                BluetoothDevice targetDevice = adapter.getRemoteDevice(MAC); // Находим удалённый девайс по MAC
+                Log.d(TAG, String.format("Target device: %s/%s", targetDevice.getName(), targetDevice.getAddress()));
+
+                bluetoothService.connect(targetDevice);
+                Toast.makeText(MainActivityJava.this, bluetoothService.getStateAsMessage(), Toast.LENGTH_SHORT).show();
+                if (bluetoothService.isConnected()) {
+                    bluetoothService.sendData("Device connected / Устройство подключено");
+                    closeOverlay();
+                    setDeviceNameFieldText(targetDevice.getName());
+                    Toast.makeText(MainActivityJava.this, bluetoothService.getStateAsMessage(), Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(MainActivityJava.this, "Не удалось подлючиться к устройству", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+    }
+
+    private void deviceToastAlert(List<BluetoothDevice> devices) {
         if (devices.size() == 0) {
             Toast.makeText(this, "Устройств не обнаружено", Toast.LENGTH_SHORT).show();
         } else {
             Toast.makeText(this, "Устройства найдены", Toast.LENGTH_SHORT).show();
         }
-
-        final String[] deviceArray = deviceNames.toArray(new String[deviceNames.size()]);
-        ArrayAdapter<String> arrayAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, deviceArray);
-
-        this.deviceList.setAdapter(arrayAdapter);
-        this.deviceList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                String selectedItem = (String) adapterView.getItemAtPosition(i);
-                Log.d(TAG, String.format("Выбран элемент %s", selectedItem));
-                /// TODO: 26.01.2024 connection to devices
-            }
-        });
     }
 
+
     /**
-     * Method for overlay closing
+     * For closing an overlay with list of devices
      * */
     private void closeOverlayButtonOnClick() {
         this.closeButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                frameLayout.setVisibility(View.INVISIBLE);
+                closeOverlay();
                 Log.d(TAG, "FrameLayout is invisible");
             }
         });
     }
 
 
+    private void closeOverlay() {
+        this.frameLayout.setVisibility(View.INVISIBLE);
+    }
+
+
+    private void setDeviceNameFieldText(String newText) {
+        MainActivityJava.this.deviceNameField.setText(newText);
+    }
 }
